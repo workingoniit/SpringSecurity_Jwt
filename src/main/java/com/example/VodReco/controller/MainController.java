@@ -15,14 +15,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import static com.fasterxml.jackson.databind.type.LogicalType.Map;
 
 @RestController
 @RequiredArgsConstructor
-
 @Slf4j
-
-
 @RequestMapping("/main")
 public class MainController {
     private final KafkaProducerService producerService;
@@ -45,7 +46,6 @@ public class MainController {
 //    private final List<String> genreModelList = new ArrayList<>();
 //    private final List<String> personalModelList = new ArrayList<>();
 
-
 //    private final ToDescriptionModelDto toDescriptionModelDto; //bean 등록함(231104)
 //    private final ToGenreModelDto toGenreModelDto; // bean 등록함
 //    private final ToPersonalModelDto toPersonalModelDto; // bean 등록, 테스트용(231112)
@@ -55,18 +55,10 @@ public class MainController {
     //1. 새로고침 클릭 이전 프론트로부터 데이터 받아 DB에 적재 + 모델에 보낼 대기조 만드는 메서드(231104)
     //스프링 빈에 모델에 보내기 위한 dto 3개 등록해서 전역변수로 써야 할 것으로 예상
     //이 메서드에서는 각각 담아놓고 -> 새로고침 터지면 아래 메서드에서 꺼내서 정리
-    /*
-     *  프론트가 보내는 데이터 형식:
-     *     {"model”:"descriptionModel”, “content_id”:”20200622”, “wish”:1}
-     *     wishRequestDto, ratingRequestDto에 담아서 model필드랑 content_id만 따로 담기
-     *     일단 찜을 취소하면 "wish":0으로 받는다고 생각하기 -> 논의 필요. 그래도 찜을 취소한 건 제외하는 게(231104)
-     *
-     */
-
 
     //카프카 도입으로 흐름 수정(231112)
     //새로고침 버튼이 눌리면 준비해둔 데이터를 토픽에 보내고 -> fastAPI에서 토픽에 던지는 데이터를 기다렸다가 받아와서 -> 프론트에 전송해야 하는데
-    //wish, rating 들어올 때 DB에 적재함과 동시에 + 모델에 보낼 형식 맞춰 준비해서 -> 새로고침과 다음 추천 사이 로딩타임을 최소화
+    //wish, rating 들어올 때 DB에 적재함과 동시에 + 모델에 보낼 형식 맞춰 준비 -> 새로고침과 다음 추천 사이 로딩타임을 최소화
     @PostMapping("/{content_id}/wish")
 
     public List<EveryDescription> wish(@PathVariable("content_id") String contentId, @RequestBody WishRequestFromMainDto wishRequestFromMainDto, ServletRequest servletRequest)
@@ -192,17 +184,10 @@ public class MainController {
 
     //3. 새로고침 클릭 이후 모델로부터 데이터 받아서 -> 형식 맞추고 -> 프론트에 보내는 메서드(231104)
 
-    //모델이 보내는 데이터 형식:
-    //{"description_data":["content_id1", "content_id2", ... , "content_id10" ],
-    // "genre_data":["content_id1", "content_id2", ... , "content_id10"],
-    // "personal_data":["content_id1", "content_id2", ... , "content_id10"]}
-    //프론트에 보낼 데이터 형식: 노션에 있음
-
-
     //순서: 스프링 서버 재실행 -> Producer 파이썬 파일 실행 -> API 테스트
     //새로고침 이벤트 한 번에 아래 method까지 병합해야 함 -> 방안 1. fastAPI에 데이터 3가지 그냥 묶어서 보낸다 2. API 3개로 분리하고 셋 중에 아무거나에 아래 메서드 연결한다(기준이?)
     //fastAPI에 send하는 건 return으로 줄 필요 없고 중간에 보내버리면 됨(231110)
-    @GetMapping("/byFastAPI")
+    @GetMapping("/rereco")
     public ToClient3rdDto getFromModel(){
 //        toDescriptionModelDto.setDescription_data(descriptionList);
 //        toGenreModelDto.setGenre_data(genreList);
@@ -211,20 +196,28 @@ public class MainController {
 
         //Topic에 데이터 전송
         // personal모델 추후 작성 필요(231112)
-        toModelDto.setModelName("description_data");
-        toModelDto.setResponseData(descriptionList);
-        producerService.sendMessage(toModelDto);
+//        toModelDto.setModelName("description_data");
+//        toModelDto.setResponseData(descriptionList);
+//        Map<String, List<?>> descriptionMap = new HashMap<>();
+//        descriptionMap.put("description_data", descriptionList);
+//        toModelDto.setToModelData(descriptionMap);
+        producerService.sendMessages(descriptionList, genreList);
+        //toModelDto 안에 아예 Map을 넣어서 Map<String, List<?>> 로 만들면 원래 합의했던 형식대로 가능할 수도(231113)
 
-        toModelDto.setModelName("genre_data");
-        toModelDto.setResponseData(genreList);
-        producerService.sendMessage(toModelDto);
+//        toModelDto.setModelName("genre_data");
+//        toModelDto.setResponseData(genreList);
+//        Map<String, List<?>> genreMap = new HashMap<>();
+//        genreMap.put("genre_data", genreList);
+//        toModelDto.setToModelData(genreMap);
+//
 
-        descriptionList.clear(); //다음 턴을 위해 리스트 비우기(231112)
-        genreList.clear();
+        //테스트를 위해 일시적 주석처리함
+//        descriptionList.clear(); //다음 턴을 위해 리스트 비우기(231112)
+//        genreList.clear();
 
 
         //이하 consumer에서 가져온 데이터 처리해서 프론트로 보내는 코드(231112)
-//        초기에 Topic에 데이터 없으면 NPE(231112) -> exception 처리 필요
+//        초기에 Topic에 데이터 없으면 NPE(231112) -> exception 처리 필요, setPollTimeout(1000)? 기본은 5000ms
 
         FromModelDto fromModelDto = consumerService.getProcessedData();
         System.out.println("컨트롤러 확인 = " + fromModelDto);
@@ -233,7 +226,6 @@ public class MainController {
         ToClient1stDto[] array1 = new ToClient1stDto[10];
         List<String> descriptionData = fromModelDto.getDescription_data();
         ToClient2ndDto descriptionDto = sendData(array1, descriptionData);
-
 
         ToClient1stDto[] array2 = new ToClient1stDto[10];
         List<String> genreData = fromModelDto.getGenre_data();

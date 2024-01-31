@@ -60,11 +60,11 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
                         //permitAll 작동이 잘 안 되는 문제가 있어왔음 -> 혹시 requestMatchers 뒤에 딱 하나씩만 해야 하는 거 아닐까? 테스트(231110)
-                        //requestMatchers("/~~", "/~~", "/~~" ...) 에서 한 줄씩으로 바꿨더니 되는 듯
-                        //테스트 (231110) -> 작동 확인
+                        //requestMatchers("/~~", "/~~", "/~~" ...) 에서 한 줄씩 .permitAll()로 바꿔야 함
                         .requestMatchers("/kafka").permitAll()
                         .requestMatchers("/main/**").permitAll()
                         .requestMatchers("/signup/**").permitAll()
+                        .requestMatchers("/signup").permitAll()
                         .requestMatchers("/login").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
@@ -83,6 +83,7 @@ public class SecurityConfig {
                 )
 
                 .apply(new JwtSecurityConfig(tokenProvider));
+
         return http.build();
     }
 }

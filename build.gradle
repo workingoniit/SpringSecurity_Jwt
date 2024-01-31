@@ -35,9 +35,7 @@ dependencies {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
 
-
 	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
-
 
 	testImplementation 'org.springframework.security:spring-security-test'
 	runtimeOnly 'com.mysql:mysql-connector-j'
@@ -51,6 +49,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
+
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.3'
+
 }
 
 	tasks.named('test') {

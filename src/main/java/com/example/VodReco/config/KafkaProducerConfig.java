@@ -16,12 +16,13 @@ import java.util.HashMap;
 import java.util.Map;
 @EnableKafka
 @Configuration
+
 public class KafkaProducerConfig {
-//    @Value("${spring.kafka.bootstrap-servers}")
-    @Value("localhost:9092")
+//    @Value(value = "${spring.kafka.bootstrap-servers}")
+    @Value("54.180.79.76:9092")
     private String servers;
     @Bean
-    public ProducerFactory<String, ToModelDto> producerFactory() {
+    public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, servers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -29,7 +30,7 @@ public class KafkaProducerConfig {
         return new DefaultKafkaProducerFactory<>(config);
     }
     @Bean
-    public KafkaTemplate<String, ToModelDto> kafkaTemplate() {
+    public KafkaTemplate<String, String> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 }
